@@ -15,6 +15,9 @@ import PeopleAltOutlinedIcon from "@material-ui/icons/PeopleAltOutlined";
 import ContactPhoneOutlinedIcon from "@material-ui/icons/ContactPhoneOutlined";
 import AccountTreeOutlinedIcon from "@material-ui/icons/AccountTreeOutlined";
 import QuestionAnswerOutlinedIcon from "@material-ui/icons/QuestionAnswerOutlined";
+import Assessment from "@material-ui/icons/Assessment";
+import SmartToy from "@material-ui/icons/Adb";
+
 
 import { i18n } from "../translate/i18n";
 import { WhatsAppsContext } from "../context/WhatsApp/WhatsAppsContext";
@@ -102,6 +105,19 @@ const MainListItems = (props) => {
         primary={i18n.t("mainDrawer.listItems.quickAnswers")}
         icon={<QuestionAnswerOutlinedIcon />}
       />
+      <ListItemLink
+        to="/analytics"
+	primary={'Analytics'}
+        icon={<Assessment />}
+      />
+      <ListItemLink
+        to="/bot"
+	primary={"Bot"}
+        icon={<SmartToy />}
+      />
+
+
+
       <Can
         role={user.profile}
         perform="drawer-admin-items:view"
