@@ -77,7 +77,7 @@ const Login = () => {
     <Container component="main" maxWidth="xs">
       <CssBaseline />
       <div className={classes.paper}>
-        <img src="https://www.bootcampai.org/wp-content/uploads/2021/07/Logo-2021-1.png" alt=""/> 
+        <img src="https://www.snof.io/wp-content/themes/Divi/images/logo.png" alt=""/> 
         <Typography component="h1" variant="h5">
           {i18n.t("login.title")}
         </Typography>

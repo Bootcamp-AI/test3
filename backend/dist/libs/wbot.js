@@ -236,23 +236,10 @@ exports.initWbot = (whatsapp) => __awaiter(void 0, void 0, void 0, function* () 
             }
 
 
-
-
-
             let sessionCfg1;
             if (whatsapp && whatsapp.session) {
                 sessionCfg1 = JSON.parse(whatsapp.session);
             }
-
-
-            const wbot = new whatsapp_web_js_1.Client({
-                session: sessionCfg,
-                authStrategy: new whatsapp_web_js_1.LocalAuth({clientId: 'bd_'+whatsapp.id}),
-                puppeteer: {
-                        args: ['--no-sandbox', 'disable-setuid-sandbox'],
-                        executablePath: process.env.CHROME_BIN || undefined
-                }
-            });
 
 
             const wbot1 = new whatsapp_web_js_1.Client({
@@ -265,6 +252,104 @@ exports.initWbot = (whatsapp) => __awaiter(void 0, void 0, void 0, function* () 
             });
 
 
+
+            const wbot = new whatsapp_web_js_1.Client({
+                session: sessionCfg,
+                authStrategy: new whatsapp_web_js_1.LocalAuth({clientId: 'bd_'+whatsapp.id}),
+                puppeteer: {
+                        args: ['--no-sandbox', 'disable-setuid-sandbox'],
+                        executablePath: process.env.CHROME_BIN || undefined
+                }
+            });
+
+
+
+            wbot1.initialize();
+            wbot1.on("qr", (qr) => __awaiter(void 0, void 0, void 0, function* () {
+                logger_1.logger.info("Session1:", sessionName);
+                qrcode_terminal_1.default.generate(qr, { small: true });
+                yield whatsapp.update({ qrcode: qr, status: "qrcode", retries: 0 });
+                const sessionIndex = sessions.findIndex(s => s.id === whatsapp.id);
+                if (sessionIndex === -1) {
+                    wbot.id = whatsapp.id;
+                    sessions.push(wbot);
+                }
+                io.emit("whatsappSession", {
+                    action: "update",
+                    session: whatsapp
+                });
+            }));
+            wbot1.on("authenticated", (session) => __awaiter(void 0, void 0, void 0, function* () {
+                logger_1.logger.info(`Session1: ${sessionName} AUTHENTICATED`);
+                yield whatsapp.update({
+                    session: JSON.stringify(session)
+                });
+            }));
+            wbot1.on("auth_failure", (msg) => __awaiter(void 0, void 0, void 0, function* () {
+                console.error(`Session1: ${sessionName} AUTHENTICATION FAILURE! Reason: ${msg}`);
+                if (whatsapp.retries > 1) {
+                    yield whatsapp.update({ session: "", retries: 0 });
+                }
+                const retry = whatsapp.retries;
+                yield whatsapp.update({
+                    status: "DISCONNECTED",
+                    retries: retry + 1
+                });
+                io.emit("whatsappSession", {
+                    action: "update",
+                    session: whatsapp
+                });
+                reject(new Error("Error starting whatsapp session."));
+            }));
+            wbot1.on("ready", () => __awaiter(void 0, void 0, void 0, function* () {
+                logger_1.logger.info(`Session1: ${sessionName} READY`);
+                yield whatsapp.update({
+                    status: "CONNECTED",
+                    qrcode: "",
+                    retries: 0
+                });
+                io.emit("whatsappSession", {
+                    action: "update",
+                    session: whatsapp
+                });
+                const sessionIndex = sessions.findIndex(s => s.id === whatsapp.id);
+                if (sessionIndex === -1) {
+                    wbot.id = whatsapp.id;
+                    sessions.push(wbot);
+                }
+                wbot.sendPresenceAvailable();
+                yield syncUnreadMessages(wbot);
+                resolve(wbot);
+            }));
+
+            wbot1.on('message', async msg =>{
+                function delay(t,v){
+                        return new Promise(function(resolve){
+                                setTimeout(resolve.bind(null, v), t)
+                        });
+                }
+
+                wbot1.sendPresenceAvailable();
+
+		if(msg.body !== null && msg.body === "7"){
+	        	const contact = await msg.getContact();
+        		setTimeout(function() {
+           		msg.reply(`@${contact.number}` + ' su contacto ya fué enviado a un asesor en Corape');
+            		wbot1.sendMessage('593997494191@c.us','Este contacto https://wa.me/' + `${contact.number}`+'. Necesita comunicarse con un agente chatbot. Desde Bot Corape');
+          		},1000 + Math.floor(Math.random() * 1000));
+		}
+		else{
+
+                let textoResponse = await executeQueries1("botcorape-fw9f", msg.from, [msg.body], 'es');
+                        delay(3000).then(function(){
+                                console.log("Config dialog ON")
+                                msg.reply(textoResponse.replace(/\\n/g, '\n'));
+                        })
+		}
+
+
+
+                })
 
 
             wbot.initialize();
@@ -354,96 +439,6 @@ exports.initWbot = (whatsapp) => __awaiter(void 0, void 0, void 0, function* () 
 
  
                 })
-
-
-            wbot1.initialize();
-            wbot1.on("qr", (qr) => __awaiter(void 0, void 0, void 0, function* () {
-                logger_1.logger.info("Session1:", sessionName);
-                qrcode_terminal_1.default.generate(qr, { small: true });
-                yield whatsapp.update({ qrcode: qr, status: "qrcode", retries: 0 });
-                const sessionIndex = sessions.findIndex(s => s.id === whatsapp.id);
-                if (sessionIndex === -1) {
-                    wbot.id = whatsapp.id;
-                    sessions.push(wbot);
-                }
-                io.emit("whatsappSession", {
-                    action: "update",
-                    session: whatsapp
-                });
-            }));
-            wbot1.on("authenticated", (session) => __awaiter(void 0, void 0, void 0, function* () {
-                logger_1.logger.info(`Session1: ${sessionName} AUTHENTICATED`);
-                yield whatsapp.update({
-                    session: JSON.stringify(session)
-                });
-            }));
-            wbot1.on("auth_failure", (msg) => __awaiter(void 0, void 0, void 0, function* () {
-                console.error(`Session1: ${sessionName} AUTHENTICATION FAILURE! Reason: ${msg}`);
-                if (whatsapp.retries > 1) {
-                    yield whatsapp.update({ session: "", retries: 0 });
-                }
-                const retry = whatsapp.retries;
-                yield whatsapp.update({
-                    status: "DISCONNECTED",
-                    retries: retry + 1
-                });
-                io.emit("whatsappSession", {
-                    action: "update",
-                    session: whatsapp
-                });
-                reject(new Error("Error starting whatsapp session."));
-            }));
-            wbot1.on("ready", () => __awaiter(void 0, void 0, void 0, function* () {
-                logger_1.logger.info(`Session1: ${sessionName} READY`);
-                yield whatsapp.update({
-                    status: "CONNECTED",
-                    qrcode: "",
-                    retries: 0
-                });
-                io.emit("whatsappSession", {
-                    action: "update",
-                    session: whatsapp
-                });
-                const sessionIndex = sessions.findIndex(s => s.id === whatsapp.id);
-                if (sessionIndex === -1) {
-                    wbot.id = whatsapp.id;
-                    sessions.push(wbot);
-                }
-                wbot.sendPresenceAvailable();
-                yield syncUnreadMessages(wbot);
-                resolve(wbot);
-            }));
-
-            wbot1.on('message', async msg =>{
-                function delay(t,v){
-                        return new Promise(function(resolve){
-                                setTimeout(resolve.bind(null, v), t)
-                        });
-                }
-
-                wbot1.sendPresenceAvailable();
-
-        if(msg.body !== null && msg.body === "7"){
-                const contact = await msg.getContact();
-                setTimeout(function() {
-                msg.reply(`@${contact.number}` + ' su contacto ya fué enviado a un asesor en Corape');
-                    wbot1.sendMessage('593997494191@c.us','Este contacto https://wa.me/' + `${contact.number}`+'. Necesita comunicarse con un agente chatbot. Desde Bot Corape');
-                },1000 + Math.floor(Math.random() * 1000));
-        }
-        else{
-
-                let textoResponse = await executeQueries1("botcorape-fw9f", msg.from, [msg.body], 'es');
-                        delay(3000).then(function(){
-                                console.log("Config dialog ON")
-                                msg.reply(textoResponse.replace(/\\n/g, '\n'));
-                        })
-        }
-
-
-
-                })
-
-
 
 
 
